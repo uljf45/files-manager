@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="UTF-8">
-    <title>Hello World!</title>
+    <title>八爪鱼</title>
     <!-- https://electronjs.org/docs/tutorial/security#csp-meta-tag -->
     <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline';" />
     <link rel="stylesheet" href="./assets/css/global.css">
@@ -10,7 +10,28 @@
     <style>
         body {
             padding: 8px;
+            padding-bottom: 0;
+        }        
+        .main {
+            flex: 1;
+            display: flex;
+            flex-direction: row;
+            overflow-y: auto;
+
         }
+        .folders {
+            flex: 1
+        }
+        .main-right-area {
+            width: 20px;
+            /* 当在此元素鼠标按下滑动时可能会选中该元素导致框选出错 */
+            user-select: none; 
+        }
+        .footer {
+            height: 20px;
+            user-select: none;
+        }
+
         .folder {
             cursor: pointer;
         }
@@ -33,7 +54,7 @@
             text-indent: 20px;
         }
 
-        .folder-self:hover, .file:hover, .dropover{
+        .folder-self:hover, .file:hover, .dropover, .select{
             background: #eee;
         }
         .fa-folder {
@@ -50,7 +71,7 @@
         .display-none {
             display: none !important;
         }
-        #dir-input-box {
+        .abs-center {
             position: absolute;
             left: 50%;
             top: 50%;
@@ -58,16 +79,34 @@
             /* width: 200px; */
             text-align: center;
         }
+        #dir-input-box {
+            
+        }
+        #dir-edit-box input,
         #dir-input-box input {
             height: 30px;
-            width: 168px;
+            width: 180px;
             text-indent: 2px;
+        }
+        .warn-tip {
+            color: rgb(240, 68, 15);
+        }
+        .select-box {
+            position: absolute;
+            background-color: #8bbff9;
+            border: 1px solid #1362b4;
+            opacity: 0.5;
+            z-index: 99999;
+            top: 0;
+            left: 0;
+            width: 0;
+            height: 0;
         }
     </style>
   </head>
   <body>
     <div id="test"></div>
-    <h1>backup</h1>
+    <!-- <h1>backup</h1> -->
     <!-- <div class="folders" id="folders-test">
         <div class="folder">
             <div class="folder-self">
@@ -101,21 +140,35 @@
         </div>
     </div> -->
     <a href="#" style="display: none;" id="drag-file-link">drag file to desktop</a>
-    <div id="folders" class="folders">
-        <!-- <div class="folder">
-            <i class="fa fa-folder v-align-mid" aria-hidden="true"></i>
-            <span class="folder-name v-align-mid">
-                测试
-            </span>
-        </div> -->
+    <div class="main">
+        <div id="folders" class="folders">
+            <!-- <div class="folder">
+                <i class="fa fa-folder v-align-mid" aria-hidden="true"></i>
+                <span class="folder-name v-align-mid">
+                    测试
+                </span>
+            </div> -->
+        </div>
+        <div class="main-right-area"></div>
     </div>
-    <div id="dir-input-box" class="display-none">
+    <div class="footer">
+        
+    </div>
+    <div id="dir-input-box" class="abs-center display-none">
         <input class="dir-input" type="text" autofocus placeholder="请输入文件夹名称">
     </div>
+    <div id="dir-edit-box" class="abs-center display-none">
+        <div>
+            <input type="text" autofocus placeholder="请输入文件夹名称">
+        </div>
+        <p class="warn-tip"></p>
+    </div>
+
+    <div id="select-box" class="select-box display-none">
+
+    </div>
+
     <script>
         require('./renderer.js')
-    </script>
-    <script>
-        
     </script>
 </html>

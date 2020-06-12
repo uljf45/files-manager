@@ -1,6 +1,21 @@
 const util = {
 
 }
+util.stringCompare = function (a, b) {
+    let len = Math.min(a.length, b.length)
+    for (let i = 0; i < len; i++) {
+        let res = a.codePointAt(i) - b.codePointAt(i)
+        if (res !== 0) return res
+    }
+    if (a.length > b.length) {
+        return 1
+    }
+    if (a.length < b.length) {
+        return -1
+    }
+
+    return 0
+}
 
 util.parent = function (node, selector) {
     if (!node) return

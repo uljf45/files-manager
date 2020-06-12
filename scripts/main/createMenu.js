@@ -1,6 +1,9 @@
+const { Menu } = require("electron")
+
 const isMac = process.platform === 'darwin'
 
-const template = [
+function createMenu(win) {
+  let template = [
     // {role: 'appMenu'}
     ...(isMac ? [
       {
@@ -110,4 +113,7 @@ const template = [
     }
   ]
 
-  module.exports = template
+  return Menu.buildFromTemplate(template) //自定义菜单
+}
+
+module.exports = createMenu

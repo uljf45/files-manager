@@ -2,10 +2,7 @@ const electron = require('electron')
 
 const { Menu, MenuItem, app, BrowserWindow, ipcMain } = electron
 
-const template = require('./scripts/main/template')
-
-const menu = Menu.buildFromTemplate(template) //自定义菜单
-Menu.setApplicationMenu(menu)
+const createMenu = require('./scripts/main/createMenu')
 
 let win
 
@@ -18,6 +15,8 @@ function createWindow() {
       enableRemoteModule: true,
     }
   })
+  const menu = createMenu(win) //自定义菜单
+  Menu.setApplicationMenu(menu)
   win.loadFile('index.html')
   // win.webContents.openDevTools() //npm start 自动打开devtool
 }

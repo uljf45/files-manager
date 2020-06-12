@@ -3,7 +3,7 @@ const fs = require('fs')
 const path = require('path')
 const util = require('./scripts/web/util')
 
-const { ipcRenderer, remote } = require('electron');
+const { ipcRenderer, remote, shell } = require('electron');
 
 const { Menu, MenuItem } = remote
 
@@ -17,6 +17,9 @@ let curDir = {
     name: '',
     level: -1
 }
+
+const historyStack = [
+]
 
 let dirs = db.get('dirs').filter({parent: ''}).value()
 // let win = new BrowseWindow({
@@ -35,12 +38,33 @@ ipcRenderer.send('asynchronous-message', 'async-ping');
 
 const dirInputBox = document.getElementById('dir-input-box')
 
-ipcRenderer.on('show-input-box', (event, arg) => {
+function showInputbox() {
     dirInputBox.classList.remove(noneClass)
     setTimeout(() => {
         dirInputBox.querySelector('.dir-input').focus()
     }, 1)
-    
+}
+
+const dirEditBox = document.getElementById('dir-edit-box')
+
+let curEditDir = null
+
+function showEditBox(dom) {
+    dirEditBox.classList.remove(noneClass)
+    let editBox = dirEditBox.querySelector('input')
+    let id = dom.dataset.id
+    let dir = db.read().get('dirs').find({id}).value()
+    curEditDir = dir
+    editBox.value = dir.name
+
+    setTimeout(() => {
+        editBox.focus()
+        editBox.select()
+    }, 1)
+}
+
+ipcRenderer.on('show-input-box', (event, arg) => {
+    showInputbox()
 })
 
 function hideDirInputBox () {
@@ -48,11 +72,22 @@ function hideDirInputBox () {
     dirInputBox.classList.add(noneClass)
 }
 
+function hideDirEditBox() {
+    curEditDir = null
+    trigger.reset()
+    dirEditBox.querySelector('input').value = ''
+    dirEditBox.querySelector('.warn-tip').innerText = ''
+    dirEditBox.classList.add(noneClass)
+}
+
 dirInputBox.addEventListener('keydown', (event) => {
     switch(event.keyCode) {
         case 13:
             let v = event.target.value.trim()
             // test.innerText = v
+            if (v === '') {
+                v = "New Folder " + new Date().getTime()
+            }
             let find = db.get('dirs').find({name: v}).value()
     
             console.log('find ' + find)
@@ -66,10 +101,46 @@ dirInputBox.addEventListener('keydown', (event) => {
             }
             
             hideDirInputBox()
-            break
+        break
         case 27:
             hideDirInputBox()
-            break
+        break
+    }
+})
+
+dirEditBox.addEventListener('keydown', (event) => {
+    switch(event.keyCode) {
+        case 27: 
+            trigger.reset()
+            hideDirEditBox()
+        break
+        case 13:
+            let v = event.target.value.trim()
+            let dir = curEditDir
+            if (v == dir.name) {
+                hideDirEditBox()
+            } else {
+                let has = db.get('dirs').find({
+                    name: v,
+                    level: dir.level
+                }).value()
+                if (has) {
+                    // dirEditBox.querySelector('.warn-tip').innerText = 'name exists'
+                    let notify = new Notification('Name Exists!')
+                    
+                    setTimeout(() => notify.close(), 2000)
+                } else {
+                    db.get('dirs').find({
+                        id: dir.id
+                    }).assign({
+                        name: v
+                    }).write()
+                    trigger.dom.querySelector('.folder-name').innerText = v
+                    hideDirEditBox()
+                }
+            }
+            
+        break
     }
 })
 
@@ -113,6 +184,10 @@ function fileHtml(file, dir) {
 
 function init() {
     dirs = db.get('dirs').filter({parent: ''}).value()
+    dirs.sort((a,b) => {
+        return util.stringCompare(a.name,b.name)
+    })
+    // console.log(dirs)
     if (dirs && dirs.length) {
         let html = dirs.map(dir => {
             return folderHtml(dir)
@@ -151,9 +226,9 @@ dragWrapper.addEventListener('drop', (e) => {
     console.log(e)
     
     const files = e.dataTransfer.files
-    
+    let target = findDropTarget(e.target)
     if (files && files.length >= 1) {
-        let target = findDropTarget(e.target)
+        
         let folder = findDropDir(target)
 
         const filePath = files[0].path
@@ -192,13 +267,13 @@ dragWrapper.addEventListener('drop', (e) => {
             }
         }
     
-         target.classList.remove('dropover')
+         
         // dropTarget = null
         // const content = fs.readFileSync(path)
         // console.log(content.toString())
         e.preventDefault()
-
     }
+    target.classList.remove('dropover')
 })
 
 // let dropTarget = null
@@ -225,7 +300,7 @@ dragWrapper.addEventListener('dragover', (e) => {
 })
 
 dragWrapper.addEventListener('dragleave', (e) => {
-    console.log(e.target)
+    // console.log(e.target)
     if (e.target && (e.target.classList.contains('file') || e.target.classList.contains('folder-self'))) {
         // let target = findDropTarget(e.target)
         // if (target) {
@@ -266,29 +341,132 @@ dragWrapper.addEventListener('click', (e) => {
     }
 })
 
-const menu = new Menu()
-menu.append(new MenuItem({
+dragWrapper.addEventListener('dblclick', (e) => {
+    if (e.target.classList.contains('file')) {
+        let target = e.target
+        let id = target.dataset.id
+        let file = db.read().get('files').find({id}).value()
+        shell.openPath(file.path)
+    }
+})
+
+// file ContextMenu
+const fileMenu = new Menu()
+fileMenu.append(new MenuItem({
+    label: 'Open',
+    click() {
+        let dom = trigger.dom
+        let id = dom.dataset.id
+        let file = db.get('files').find({id}).value()
+        let path = file.path
+        shell.openPath(path)
+    }
+}))
+fileMenu.append(new MenuItem({
+    label: 'Reveal in File Explorer',
+    click() {
+        let dom = trigger.dom
+        let id = dom.dataset.id
+        let file = db.get('files').find({id}).value()
+        let path = file.path
+        shell.showItemInFolder(path)
+    }
+}))
+fileMenu.append(new MenuItem({
+    type: 'separator'
+}))
+fileMenu.append(new MenuItem({
     label: 'Delete',
     click() {
         switch(trigger.type) {
             case 'file':
-                switch(trigger.opr) {
-                    case 'delete':
-                        let dom = trigger.dom
-                        let id = dom.dataset.id
-                        db.get('files').remove({
-                            id
-                        }).write()
-                        dom.remove()
-                    break
-                }
+                let dom = trigger.dom
+                let id = dom.dataset.id
+                let file = db.get('files').find({id}).value()
+                historyStack.push({
+                    type: 'file',
+                    entity: file,
+                    dom: dom
+                })
+                db.get('files').remove({
+                    id
+                }).write()
+                dom.classList.add(noneClass)
+                trigger.reset()
             break
         }
     }
 }))
-menu.append(new MenuItem({
+fileMenu.append(new MenuItem({
     type: 'separator'
 }))
+
+//folder ContextMenu
+const folderMenu = new Menu()
+folderMenu.append(new MenuItem({
+    label: 'Delete',
+    click() {
+        let dom = trigger.dom
+        let id = dom.dataset.id
+        let dir = db.get('dirs').find({id}).value()
+        historyStack.push({
+            type: 'folder',
+            entity: dir,
+            dom
+        })
+        console.log(historyStack)
+        db.get('dirs').remove({
+            id
+        }).write()
+        // db.get('files').remove({
+        //     dirid: id
+        // }).write()
+        dom.parentElement.classList.add(noneClass)
+        trigger.reset()
+        
+    }
+}))
+folderMenu.append(new MenuItem({
+    label: 'Rename',
+    click () {
+        showEditBox(trigger.dom)
+        // trigger.reset()
+    }
+}))
+
+//ContextMenu
+const contextMenu = new Menu()
+contextMenu.append(new MenuItem({
+    label: 'New Folder',
+    click () {
+        showInputbox()
+    },
+}))
+
+function undo() {
+    let who = historyStack.pop() // type entity dom
+    
+    switch (who.type) {
+        case 'file':
+            who.dom.classList.remove(noneClass)
+            db.get('files').push(who.entity).write()
+        break
+        case 'folder':
+            who.dom.parentElement.classList.remove(noneClass)
+            db.get('dirs').push(who.entity).write()
+        break
+    }
+}
+
+let undoItem = new MenuItem({
+    label: 'Undo',
+    click () {
+        undo()
+    }
+})
+
+contextMenu.append(undoItem)
+
 
 const trigger = {
     type: null, // file folder
@@ -307,6 +485,8 @@ const trigger = {
     }
 }
 
+
+
 window.addEventListener('contextmenu', (e) => {
     e.preventDefault()
     if (e.target.classList.contains('file')) {
@@ -314,13 +494,91 @@ window.addEventListener('contextmenu', (e) => {
         let id = fileDom.dataset.id
         trigger.set({
             type: 'file',
-            opr: 'delete',
             dom: fileDom
         })
 
-        menu.popup({
+        fileMenu.popup({
+            window: remote.getCurrentWindow()
+        })
+    } else if (e.target.classList.contains('folder-self')) {
+        let dirDom = e.target
+        let id = dirDom.dataset.id
+        trigger.set({
+            type: 'folder',
+            dom: dirDom
+        })
+
+        folderMenu.popup({
+            window: remote.getCurrentWindow()
+        })
+    } else {
+        if (historyStack.length === 0) {
+            undoItem.visible = false
+        } else {
+            undoItem.visible = true
+        }
+        contextMenu.popup({
             window: remote.getCurrentWindow()
         })
     }
     
-}) 
+})
+
+let mainDom = document.querySelector('.main')
+let selectBox = document.querySelector('#select-box')
+let pos = {}
+function setPos() {
+    selectBox.style.left = Math.min(pos.startX, pos.x) + 'px'
+    selectBox.style.top = Math.min(pos.startY, pos.y) + 'px'
+    selectBox.style.width = Math.abs(pos.startX - pos.x) + 'px'
+    selectBox.style.height = Math.abs(pos.startY - pos.y) + 'px'
+    
+}
+const EventStatus = {
+    select: false
+}
+
+window.addEventListener('mousedown', (e) => {
+    console.dir(e)
+    let target = e.target
+    let classList = target.classList
+    if (!classList.contains('folder-self') && !classList.contains('file')) {
+        pos.startX = e.x
+        pos.startY = e.y
+        pos.x = e.x
+        pos.y = e.y
+        setPos()
+        selectBox.classList.remove(noneClass)
+
+        function move(e) {
+            EventStatus.select = true
+            pos.x = e.x
+            pos.y = e.y
+            setPos()
+        }
+        window.addEventListener('mousemove', move)
+        
+        function up(event) {
+            selectBox.classList.add(noneClass)
+            EventStatus.select = false
+            Object.assign(pos, {
+                x: 0, y: 0, startX: 0, startY: 0
+            })
+            setPos()
+            window.removeEventListener('mousemove', move)
+            window.removeEventListener('mouseup', up)
+        }
+        window.addEventListener('mouseup', up)
+
+        function over(e) {
+            let target = e.target
+            let classList = target.classList
+            if (classList.contains('folder-self') && classList.contains('file')) {
+                target.classList.add('select')
+            }
+        }
+    }
+
+    
+})
+
