@@ -20,6 +20,9 @@
 
         }
         .folders {
+            
+        }
+        .main-left-area {
             flex: 1
         }
         .main-right-area {
@@ -39,7 +42,9 @@
             text-indent: 0;
         }
         .folder-self, .file {
+            height: 28px;
             user-select: none;
+            border: 1px solid transparent;
         }
         .folder-self i,
         .folder-self span,
@@ -57,9 +62,17 @@
         .folder-self:hover, .file:hover, .dropover, .select{
             background: #eee;
         }
+        .select {
+            background: #F4FBFF !important;
+            border-bottom: 1px solid#CBEDFF;
+        }
+        .select.bdr-t{
+            border-top: 1px solid#CBEDFF;
+        }
         .fa-folder {
             color: #fbc965;
             font-size: 24px;
+            width: 24px;
         }
         .fa-file {
             color: #555;
@@ -102,11 +115,14 @@
             width: 0;
             height: 0;
         }
+        h1 {
+            user-select: none;
+        }
     </style>
   </head>
   <body>
     <div id="test"></div>
-    <!-- <h1>backup</h1> -->
+    <h1>backup</h1>
     <!-- <div class="folders" id="folders-test">
         <div class="folder">
             <div class="folder-self">
@@ -141,13 +157,15 @@
     </div> -->
     <a href="#" style="display: none;" id="drag-file-link">drag file to desktop</a>
     <div class="main">
-        <div id="folders" class="folders">
-            <!-- <div class="folder">
-                <i class="fa fa-folder v-align-mid" aria-hidden="true"></i>
-                <span class="folder-name v-align-mid">
-                    测试
-                </span>
-            </div> -->
+        <div class="main-left-area">
+            <div id="folders" class="folders">
+                <!-- <div class="folder">
+                    <i class="fa fa-folder v-align-mid" aria-hidden="true"></i>
+                    <span class="folder-name v-align-mid">
+                        测试
+                    </span>
+                </div> -->
+            </div>
         </div>
         <div class="main-right-area"></div>
     </div>

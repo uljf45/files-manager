@@ -455,6 +455,26 @@ function undo() {
             who.dom.parentElement.classList.remove(noneClass)
             db.get('dirs').push(who.entity).write()
         break
+        case 'select':
+            let doms = who.dom
+            let dirs = who.entity[0]
+            let files = who.entity[1]
+
+            if (dirs.length) {
+                db.get('dirs').push(...dirs).write()
+            }
+            if (files.length) {
+                db.get('files').push(...files).write(0)
+            }
+            doms.forEach(dom => {
+                if (dom.classList.contains('file')) {
+                    dom.classList.remove(noneClass)
+                } else {
+                    dom.parentElement.classList.remove(noneClass)
+                }
+            })
+            
+        break
     }
 }
 
@@ -466,6 +486,72 @@ let undoItem = new MenuItem({
 })
 
 contextMenu.append(undoItem)
+
+//selectMenu 右键鼠标框选
+const selectMenu = new Menu()
+selectMenu.append(new MenuItem({
+    label: 'Delete Selected',
+    click () {
+        let doms = trigger.dom
+        let ids = Array.prototype.map.call(doms, dom => {
+            return {
+                dom: dom,
+                id: dom.dataset.id,
+                type: dom.classList.contains('file') ? 'file' : 'folder'
+            }
+        })
+        let dirIds = ids.filter(id => {
+            return id.type == 'folder'
+        }).map(v => v.id)
+
+        let fileIds = ids.filter(id => {
+            return id.type == 'file'
+        }).map(v => v.id)
+
+        let dirs = db.get('dirs').filter(dir => {
+            return dirIds.includes(dir.id)
+        }).value()
+
+        let files = db.get('files').filter(file => {
+            return fileIds.includes(file.id)
+        }).value()
+
+        if (dirIds.length) {
+            dirIds.forEach(id => {
+                db.get('dirs').remove({id}).write()
+            })
+        }
+
+        if (fileIds.length) {
+            fileIds.forEach(id => {
+                db.get('files').remove({id}).write()
+            })
+        }
+
+        ids.forEach(item => {
+            let dom = item.dom
+            switch(item.type) {
+                case 'file':
+                    dom.classList.add(noneClass)
+                break
+
+                case 'folder':
+                    dom.parentElement.classList.add(noneClass)
+                break
+            }
+        })
+
+        historyStack.push({
+            type: 'select',
+            entity: [dirs, files],
+            dom: doms
+        })
+
+        console.log(dirs, files)
+
+        
+    }
+}))
 
 
 const trigger = {
@@ -485,11 +571,22 @@ const trigger = {
     }
 }
 
-
-
 window.addEventListener('contextmenu', (e) => {
+    console.log('window contextmenu')
     e.preventDefault()
-    if (e.target.classList.contains('file')) {
+    if (e.target.classList.contains('select')) {
+        trigger.set({
+            type: 'select',
+            dom: foldersDom.querySelectorAll('.select')
+        })
+        selectMenu.popup({
+            window: remote.getCurrentWindow()
+        })
+    }
+    else if (e.target.classList.contains('file')) {
+        foldersDom.querySelectorAll('.file, .folder-self').forEach(dom => {
+            dom.classList.remove('select')
+        })
         let fileDom = e.target
         let id = fileDom.dataset.id
         trigger.set({
@@ -501,6 +598,9 @@ window.addEventListener('contextmenu', (e) => {
             window: remote.getCurrentWindow()
         })
     } else if (e.target.classList.contains('folder-self')) {
+        foldersDom.querySelectorAll('.file, .folder-self').forEach(dom => {
+            dom.classList.remove('select')
+        })
         let dirDom = e.target
         let id = dirDom.dataset.id
         trigger.set({
@@ -520,11 +620,15 @@ window.addEventListener('contextmenu', (e) => {
         contextMenu.popup({
             window: remote.getCurrentWindow()
         })
+        foldersDom.querySelectorAll('.file, .folder-self').forEach(dom => {
+            dom.classList.remove('select')
+        })
     }
     
 })
 
 let mainDom = document.querySelector('.main')
+let foldersDom = mainDom.querySelector('.folders')
 let selectBox = document.querySelector('#select-box')
 let pos = {}
 function setPos() {
@@ -536,6 +640,10 @@ function setPos() {
 }
 const EventStatus = {
     select: false
+}
+
+let mainRect = {
+
 }
 
 window.addEventListener('mousedown', (e) => {
@@ -550,11 +658,23 @@ window.addEventListener('mousedown', (e) => {
         setPos()
         selectBox.classList.remove(noneClass)
 
+        mainRect = mainDom.getBoundingClientRect()
+        let foldersRect = foldersDom.getBoundingClientRect()
+
+        foldersDom.querySelectorAll('.file, .folder-self').forEach(dom => {
+            dom.classList.remove('select')
+        })
+
         function move(e) {
             EventStatus.select = true
             pos.x = e.x
             pos.y = e.y
             setPos()
+            let height = 26
+            let innerTop = mainRect.top + mainDom.scrollTop
+            selectArea()
+
+
         }
         window.addEventListener('mousemove', move)
         
@@ -579,6 +699,54 @@ window.addEventListener('mousedown', (e) => {
         }
     }
 
-    
+    else if ( classList.contains('select') && e.button == 2 ) {
+
+    } else {
+        foldersDom.querySelectorAll('.file, .folder-self').forEach(dom => {
+            dom.classList.remove('select')
+        })
+    }
 })
 
+function selectArea() {
+    let foldersRect = foldersDom.getBoundingClientRect()
+    let selectLeft = Math.min(pos.startX, pos.x)
+    let selectTop = Math.min(pos.startY, pos.y)
+    let selectRight = Math.max(pos.startX, pos.x)
+    let selectBottom = Math.max(pos.startY, pos.y)
+
+    if ((selectTop > mainRect.bottom) ||
+        selectLeft > foldersRect.right ||
+        selectBottom < mainRect.top ||
+        selectRight < mainRect.left 
+    ) {
+        foldersDom.querySelectorAll('.file, .folder-self').forEach(dom => {
+            dom.classList.remove('select')
+        })
+    } else {
+        let isFirst = true
+        let prevFirst = foldersDom.querySelector('.bdr-t')
+        if (prevFirst) prevFirst.classList.remove('bdr-t')
+
+        foldersDom.querySelectorAll(`.file:not(.${noneClass}), .folder-self:not(.${noneClass})`).forEach(dom => {
+            let rect = dom.getBoundingClientRect()
+            if (rect.top < selectBottom && rect.bottom > selectTop) {
+                if (!dom.classList.contains('select')) {
+                    dom.classList.add('select')
+                }
+                if (isFirst) {
+                    dom.classList.add('bdr-t')
+                    isFirst = false
+                }
+            } else {
+                dom.classList.remove('select')
+            }
+        })
+    }
+}
+
+mainDom.addEventListener('scroll', (event) => {
+    if(EventStatus.select) {
+       selectArea()
+    }
+})
