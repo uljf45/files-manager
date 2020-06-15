@@ -50,12 +50,20 @@ const dirEditBox = document.getElementById('dir-edit-box')
 let curEditDir = null
 
 function showEditBox(dom) {
+    debugger
     dirEditBox.classList.remove(noneClass)
     let editBox = dirEditBox.querySelector('input')
     let id = dom.dataset.id
-    let dir = db.read().get('dirs').find({id}).value()
-    curEditDir = dir
-    editBox.value = dir.name
+
+    if (trigger.type == 'file') {
+        let file = db.read().get('files').find({id}).value()
+        curEditDir = file
+        editBox.value = file.name
+    } else {
+        let dir = db.read().get('dirs').find({id}).value()
+        curEditDir = dir
+        editBox.value = dir.name
+    }
 
     setTimeout(() => {
         editBox.focus()
@@ -120,22 +128,38 @@ dirEditBox.addEventListener('keydown', (event) => {
             if (v == dir.name) {
                 hideDirEditBox()
             } else {
-                let has = db.get('dirs').find({
-                    name: v,
-                    level: dir.level
-                }).value()
+                let has
+                if (trigger.type == 'file') {
+                    has = db.get('files').find({name: v, dirid: dir.dirid}).value()
+                } else if (trigger.type == 'folder') {
+                    let has = db.get('dirs').find({
+                        name: v,
+                        level: dir.level
+                    }).value()
+                }
+                
                 if (has) {
                     // dirEditBox.querySelector('.warn-tip').innerText = 'name exists'
                     let notify = new Notification('Name Exists!')
                     
                     setTimeout(() => notify.close(), 2000)
                 } else {
-                    db.get('dirs').find({
-                        id: dir.id
-                    }).assign({
-                        name: v
-                    }).write()
-                    trigger.dom.querySelector('.folder-name').innerText = v
+                    if (trigger.type == 'file') {
+                        db.get('files').find({
+                            id: dir.id
+                        }).assign({
+                            name: v
+                        }).write()
+                        trigger.dom.querySelector('.file-name').innerText = v
+                    } else {
+                        db.get('dirs').find({
+                            id: dir.id
+                        }).assign({
+                            name: v
+                        }).write()
+                        trigger.dom.querySelector('.folder-name').innerText = v
+                    }
+                    
                     hideDirEditBox()
                 }
             }
@@ -398,7 +422,19 @@ fileMenu.append(new MenuItem({
     }
 }))
 fileMenu.append(new MenuItem({
+    label: 'Rename',
+    click() {
+        showEditBox(trigger.dom)
+    }
+}))
+fileMenu.append(new MenuItem({
     type: 'separator'
+}))
+fileMenu.append(new MenuItem({
+    label: 'Property',
+    click() {
+        //todo 打开属性窗口
+    }
 }))
 
 //folder ContextMenu
@@ -442,50 +478,6 @@ contextMenu.append(new MenuItem({
         showInputbox()
     },
 }))
-
-function undo() {
-    let who = historyStack.pop() // type entity dom
-    
-    switch (who.type) {
-        case 'file':
-            who.dom.classList.remove(noneClass)
-            db.get('files').push(who.entity).write()
-        break
-        case 'folder':
-            who.dom.parentElement.classList.remove(noneClass)
-            db.get('dirs').push(who.entity).write()
-        break
-        case 'select':
-            let doms = who.dom
-            let dirs = who.entity[0]
-            let files = who.entity[1]
-
-            if (dirs.length) {
-                db.get('dirs').push(...dirs).write()
-            }
-            if (files.length) {
-                db.get('files').push(...files).write(0)
-            }
-            doms.forEach(dom => {
-                if (dom.classList.contains('file')) {
-                    dom.classList.remove(noneClass)
-                } else {
-                    dom.parentElement.classList.remove(noneClass)
-                }
-            })
-            
-        break
-    }
-}
-
-let undoItem = new MenuItem({
-    label: 'Undo',
-    click () {
-        undo()
-    }
-})
-
-contextMenu.append(undoItem)
 
 //selectMenu 右键鼠标框选
 const selectMenu = new Menu()
@@ -552,6 +544,52 @@ selectMenu.append(new MenuItem({
         
     }
 }))
+
+function undo() {
+    let who = historyStack.pop() // type entity dom
+    
+    switch (who.type) {
+        case 'file':
+            who.dom.classList.remove(noneClass)
+            db.get('files').push(who.entity).write()
+        break
+        case 'folder':
+            who.dom.parentElement.classList.remove(noneClass)
+            db.get('dirs').push(who.entity).write()
+        break
+        case 'select':
+            let doms = who.dom
+            let dirs = who.entity[0]
+            let files = who.entity[1]
+
+            if (dirs.length) {
+                db.get('dirs').push(...dirs).write()
+            }
+            if (files.length) {
+                db.get('files').push(...files).write(0)
+            }
+            doms.forEach(dom => {
+                if (dom.classList.contains('file')) {
+                    dom.classList.remove(noneClass)
+                } else {
+                    dom.parentElement.classList.remove(noneClass)
+                }
+            })
+            
+        break
+    }
+}
+
+let undoItem = new MenuItem({
+    label: 'Undo',
+    click () {
+        undo()
+    }
+})
+
+contextMenu.append(undoItem)
+
+
 
 
 const trigger = {

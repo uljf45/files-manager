@@ -13,6 +13,7 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: true, //nodejs生效
       enableRemoteModule: true,
+      // devTools: false   //发布时取消注释
     }
   })
   const menu = createMenu(win) //自定义菜单
