@@ -11,6 +11,7 @@ function createWindow() {
     width: 800,
     height: 600,
     webPreferences: {
+      webSecurity: false,
       nodeIntegration: true, //nodejs生效
       enableRemoteModule: true,
       // devTools: false   //发布时取消注释
@@ -52,4 +53,8 @@ ipcMain.on('ondragstart', (event, filePath) => {
     file: filePath,
     icon: './images/codeIcon.png'
   })
+})
+
+ipcMain.on('property', function(event, args) {
+  console.log(args)
 })

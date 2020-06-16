@@ -15,7 +15,7 @@ if (process.type !== 'renderer') {
 }
 
 // const adapter = new FileSync(path.join(STORE_PATH, '/data.json'))  //发布时取消注释
-const adapter = new FileSync(path.join(STORE_PATH, '/datatest.json'))
+const adapter = new FileSync(path.join(STORE_PATH, '/datatest.json'))　//发布时注释
 console.log(STORE_PATH)
 const db = Datastore(adapter)
 db._.mixin(LodashId)

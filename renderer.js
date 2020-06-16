@@ -430,12 +430,42 @@ fileMenu.append(new MenuItem({
 fileMenu.append(new MenuItem({
     type: 'separator'
 }))
+let propertyWindow = null
+
 fileMenu.append(new MenuItem({
     label: 'Property',
     click() {
         //todo 打开属性窗口
+         propertyWindow = new BrowseWindow({width: 400, height: 600, webPreferences: {
+            nodeIntegration: true, //nodejs生效
+            enableRemoteModule: true,
+            // parent: remote.getCurrentWindow()
+         }})
+         propertyWindow.loadFile('./views/property.html')
+         propertyWindow.on('close', function () {
+             propertyWindow = null
+            // let notify = new Notification('Name Exists!')
+
+         })
+         propertyWindow.setMenuBarVisibility(false)
+         ipcRenderer.send('property', JSON.stringify( {
+             win: propertyWindow,
+             fileId: trigger.dom.dataset.id
+         }));
+        //  propertyWindow.webContents.openDevTools()
+
+         propertyWindow.setParentWindow(remote.getCurrentWindow())
     }
 }))
+
+ipcRenderer.on('propertyId', function(event, args) {
+
+    BrowseWindow.fromId(args.id).webContents.send('propertyId', {
+        id: trigger.dom.dataset.id,
+        type: trigger.type
+    }
+    )
+})
 
 //folder ContextMenu
 const folderMenu = new Menu()
