@@ -3,10 +3,73 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="..//assets//css/global.css">
+    <link rel="stylesheet" href="../assets/libs/font-awesome/css/font-awesome.css">
     <title>Property</title>
+    <style>
+        body {
+            /* padding: 8px; */
+        }
+        .property-list {
+            padding: 8px;
+        }
+        .property-list span {
+            line-height: 2;
+        }
+        .property-separator {
+            border-top: 1px solid #ccc;
+            margin: 8px 0;
+            user-select: none;
+        }
+        .property-list span {
+            display: inline-block;
+        }
+        .property-list span:first-child {
+            width: 120px;
+        }
+
+        .property-content {
+            word-break: break-word;
+        }
+        .property-footer {
+            width: 100%;
+            position: fixed;
+            bottom: 0;
+            display: flex;
+            justify-content: center;
+            padding: 10px 0;
+            background: #efefef;
+        }
+        .btn {
+            width: 84px;
+            height: 30px;
+            line-height: 28px;
+            text-align: center;
+            border: 1px solid #bbb;
+            border-color: #bbb;
+            cursor: pointer;
+            transition: border-color 0.3s, background-color 0.3s ease-in-out;
+        }
+        .btn:hover {
+            background-color: #e5f5fd;
+            border-color: #50a6ff;
+        }
+        .ml-10 {
+            margin-left: 10px;
+        }
+        .mr-10 {
+            margin-right: 10px;
+        }
+    </style>
 </head>
 <body>
-Property
+    <div class="property-list">
+
+    </div>
+    <div class="property-footer">
+        <div class="btn btn-confirm mr-10">确定</div>
+        <div id="property-cancel" class="btn btn-cancel ml-10">取消</div>
+    </div>
 <script>
     require('../scripts/renderer/property.js')    
 </script>
