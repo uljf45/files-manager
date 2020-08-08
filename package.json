@@ -15,8 +15,10 @@
   },
   "dependencies": {
     "fs-extra": "^9.0.1",
+    "http-server": "^0.12.3",
     "lodash-id": "^0.14.0",
     "lowdb": "^1.0.0",
-    "nedb": "^1.8.0"
+    "nedb": "^1.8.0",
+    "ws": "^7.3.1"
   }
 }

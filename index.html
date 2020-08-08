@@ -1,192 +1,123 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="UTF-8">
-    <title>八爪鱼</title>
-    <!-- https://electronjs.org/docs/tutorial/security#csp-meta-tag -->
-    <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline';" />
-    <link rel="stylesheet" href="./assets/css/global.css">
-    <link rel="stylesheet" href="./assets/libs/font-awesome/css/font-awesome.css">
-    <style>
-        body {
-            padding: 8px;
-            padding-bottom: 0;
-        }        
-        .main {
-            flex: 1;
-            display: flex;
-            flex-direction: row;
-            overflow-y: auto;
-
-        }
-        .folders {
-            
-        }
-        .main-left-area {
-            flex: 1
-        }
-        .main-right-area {
-            width: 20px;
-            /* 当在此元素鼠标按下滑动时可能会选中该元素导致框选出错 */
-            user-select: none; 
-        }
-        .footer {
-            height: 20px;
-            user-select: none;
-        }
-
-        .folder {
-            cursor: pointer;
-        }
-        .folder i {
-            text-indent: 0;
-        }
-        .folder-self, .file {
-            height: 28px;
-            user-select: none;
-            border: 1px solid transparent;
-        }
-        .folder-self i,
-        .folder-self span,
-        .file i,
-        .file span {
-            pointer-events: none;
-        }
-        .folder .folder {
-            text-indent: 20px;
-        }
-        .files {
-            text-indent: 20px;
-        }
-
-        .folder-self:hover, .file:hover, .dropover, .select{
-            background: #eee;
-        }
-        .select {
-            background: #F4FBFF !important;
-            border-bottom: 1px solid#CBEDFF;
-        }
-        .select.bdr-t{
-            border-top: 1px solid#CBEDFF;
-        }
-        .fa-folder {
-            color: #fbc965;
-            font-size: 24px;
-            width: 24px;
-        }
-        .fa-file {
-            color: #555;
-            font-size: 20px;
-        }
-        .v-align-mid {
-            vertical-align: middle;
-        }
-        .display-none {
-            display: none !important;
-        }
-        .abs-center {
-            position: absolute;
-            left: 50%;
-            top: 50%;
-            transform: translate(-50%, -50%);
-            /* width: 200px; */
-            text-align: center;
-        }
-        #dir-input-box {
-            
-        }
-        #dir-edit-box input,
-        #dir-input-box input {
-            height: 30px;
-            width: 180px;
-            text-indent: 2px;
-        }
-        .warn-tip {
-            color: rgb(240, 68, 15);
-        }
-        .select-box {
-            position: absolute;
-            background-color: #8bbff9;
-            border: 1px solid #1362b4;
-            opacity: 0.5;
-            z-index: 99999;
-            top: 0;
-            left: 0;
-            width: 0;
-            height: 0;
-        }
-        h1 {
-            user-select: none;
-        }
-    </style>
-  </head>
-  <body>
-    <div id="test"></div>
-    <h1>backup</h1>
-    <!-- <div class="folders" id="folders-test">
-        <div class="folder">
-            <div class="folder-self">
-                <i class="fa fa-folder-open v-align-mid" aria-hidden="true"></i>
-                <span class="folder-name v-align-mid">
-                    测试
-                </span>
-            </div>
-            <div class="folder">
-                <div class="folder-self">
-                    <i class="fa fa-folder v-align-mid" aria-hidden="true"></i>
-                    <span class="folder-name v-align-mid">
-                        测试2
-                    </span>
-                </div>
-                <div class="folder">
-                    <div class="folder-self">
-                        <i class="fa fa-folder v-align-mid" aria-hidden="true"></i>
-                        <span class="folder-name v-align-mid">
-                            测试3
-                        </span>
-                    </div>
-                </div>
-            </div>
-            <ul class="files">
-                <li class="file">
-                    <i class="fa fa-file v-align-mid" aria-hidden="true"></i>
-                    <span class="file-name v-align-mid">tt</span>
-                </li>
-            </ul>
-        </div>
-    </div> -->
-    <a href="#" style="display: none;" id="drag-file-link">drag file to desktop</a>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <link rel="stylesheet" href="./assets/css/global.css">
+  <link rel="stylesheet" href="./assets/libs/font-awesome/css/font-awesome.css">
+  <script type="text/javascript" src="scripts/web/vue.js"></script>
+  <title>Document</title>
+  <style>
+    .main {
+      padding-top: 20px;
+      text-align: center;
+    }
+    .form-btns {
+      padding-top: 10px;
+    }
+  </style>
+</head>
+<body>
     <div class="main">
-        <div class="main-left-area">
-            <div id="folders" class="folders">
-                <!-- <div class="folder">
-                    <i class="fa fa-folder v-align-mid" aria-hidden="true"></i>
-                    <span class="folder-name v-align-mid">
-                        测试
-                    </span>
-                </div> -->
-            </div>
+      <form action="" @submit.prevent="submit" >
+        <div class="form-group">
+          <input type="text" class="form-control" name="message" placeholder="Type text to echo in here" v-model="msg" />
         </div>
-        <div class="main-right-area"></div>
-    </div>
-    <div class="footer">
-        
-    </div>
-    <div id="dir-input-box" class="abs-center display-none">
-        <input class="dir-input" type="text" autofocus placeholder="请输入文件夹名称">
-    </div>
-    <div id="dir-edit-box" class="abs-center display-none">
-        <div>
-            <input type="text" autofocus placeholder="请输入文件夹名称">
+        <div class="form-btns">
+          <button @click.prevent="submit2" >提交</button>
         </div>
-        <p class="warn-tip"></p>
+      </form>
     </div>
-
-    <div id="select-box" class="select-box display-none">
-
-    </div>
-
-    <script>
-        require('./renderer.js')
+  <script>
+      const vm = new Vue({
+          el: '.main',
+          data: {
+            msg: "",
+            wsUrl: "ws://localhost:12122",
+            ws: null,
+            tt: null, //重连定时器
+            lockReconnect: false, //避免重复连接
+            heartCheck: {
+              timeout: 3000, //每隔3秒发送心跳
+              num: 3, //3次心跳均未响应重连
+              serverTimeout: 5000, // 服务端超时时间
+              timeoutObj: null,
+              serverTimeoutObj: null,
+            }
+          },
+          methods: {
+            submit() {
+              console.log('submit')
+            },
+            submit2() {
+              console.log('submit2')
+              this.ws.send(this.msg)
+            },
+            createWebSocket() {
+              try {
+                this.ws = new WebSocket(this.wsUrl)
+                this.init()
+              } catch(e) {
+                console.log('catch')
+                this.reconnect(this.wsUrl)
+              }
+            },
+            init() {
+              this.ws.onclose = this.onclose
+              this.ws.onerror = this.onerror
+              this.ws.onopen = this.onopen
+              this.ws.onmessage = this.onmessage
+            },
+            onclose() {
+              console.log('链接关闭')
+              this.reconnect(this.wsUrl)
+            },
+            onerror() {
+              console.log('发生异常了')
+              this.reconnect(this.wsUrl)
+            },
+            onopen() {
+              //心跳检测重置
+              this.heartCheckStart()
+            },
+            onmessage(event) {
+              console.log("接收到消息")
+              //拿到任何消息都说明当前连接正常
+              this.heartCheckStart()
+            },
+            reconnect(url) {
+              if (this.lockReconnect) return
+              this.lockReconnect = true
+              this.tt && clearTimeout(this.tt)
+              this.tt = setTimeout(() => {
+                this.createWebSocket(url)
+                this.lockReconnect = false
+              }, 4000)
+            },
+            heartCheckStart() {
+              let h = this.heartCheck
+              let num = h.num
+              h.timeoutObj && clearTimeout(h.timeoutObj)
+              h.serverTimeoutObj && clearTimeout(this.serverTimeoutObj)
+              h.timeoutObj = setTimeout(() => {
+                //这里发送一个心跳,后端收到后, 返回一个心跳消息
+                //onmessage 拿到返回的心跳就说明连接正常
+                this.ws.send('123456789')
+                num--;
+                //计算答复的超时时间\
+                // h.serverTimeoutObj = setTimeout(() => {
+                //   this.ws.close()
+                // }, h.serverTimeout)
+                if (num === 0) this.ws.close()
+              }, h.timeout)
+            }
+          },
+          created () {
+            // this.ws = new WebSocket("ws://localhost:12122")
+            this.createWebSocket()
+          }
+      })
     </script>
+</body>
 </html>

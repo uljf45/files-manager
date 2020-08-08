@@ -4,6 +4,25 @@ const { Menu, MenuItem, app, BrowserWindow, ipcMain, Tray } = electron
 const path = require('path')
 const createMenu = require('./scripts/main/createMenu')
 
+const httpServer = require('http-server')
+
+httpServer.createServer().listen(8080)
+
+const WebSocketServer = require('ws').Server
+wss = new WebSocketServer({port: 12122})
+
+wss.on('connection', (ws) => {
+  console.log('client connected')
+  ws.on('message', (message) => {
+    console.log(message)
+    if (message == '123456789') {
+      ws.send('heart beat')
+    }
+  })
+})
+
+
+
 let win
 let tray = null
 
